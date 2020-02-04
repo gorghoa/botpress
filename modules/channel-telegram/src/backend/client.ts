@@ -8,12 +8,12 @@ import { Clients } from './typings'
 
 const outgoingTypes = ['text', 'typing', 'image', 'login_prompt', 'carousel']
 
-const debug = DEBUG('channel-telegram')
+const debug = DEBUG('channel:telegram')
 const debugIncoming = debug.sub('incoming')
 const debugOutgoing = debug.sub('outgoing')
 
 export const sendEvent = async (bp: typeof sdk, botId: string, ctx: ContextMessageUpdate, args: { type: string }) => {
-  debugIncoming(`receiving %o`, { botId, ctx, args })
+  debugIncoming.forBot(botId, `receiving %o`, { ctx, args })
   // NOTE: getUpdate and setWebhook dot not return the same context mapping
   const threadId = _.get(ctx, 'chat.id') || _.get(ctx, 'message.chat.id')
   const target = _.get(ctx, 'from.id') || _.get(ctx, 'message.from.id')
@@ -74,7 +74,7 @@ export async function setupMiddleware(bp: typeof sdk, clients: Clients) {
       return next(new Error('Unsupported event type: ' + event.type))
     }
 
-    debugOutgoing(`sending %o`, { messageType, chatId })
+    debugOutgoing.forBot(event.botId, `sending %o`, { messageType, chatId })
 
     if (messageType === 'typing') {
       await sendTyping(event, client, chatId)
