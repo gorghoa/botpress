@@ -12,6 +12,8 @@ const whMiddleware: any = {}
 let useWebhooks: boolean = true
 let whPath = ''
 
+const debug = DEBUG('channel-telegram')
+
 const onServerReady = async (bp: typeof sdk) => {
   if (useWebhooks) {
     const router = bp.http.createRouterForBot('channel-telegram', {
@@ -43,12 +45,18 @@ const onBotMount = async (bp: typeof sdk, botId: string) => {
   const config = (await bp.config.getModuleConfigForBot('channel-telegram', botId, true)) as Config
 
   if (config.enabled) {
+    debug(`channel enabled for %o`, { botId })
     const bot = new Telegraf(config.botToken)
+    bot.catch(err => {
+      bp.logger.attachError(err).error(`Telegram error: ${err}`)
+    })
 
     if (useWebhooks) {
+      debug(`using webhook for %o`, { botId })
       await bot.telegram.setWebhook(whPath.replace('BOT_ID', botId))
       whMiddleware[botId] = bot.webhookCallback('/')
     } else {
+      debug(`using polling for %o`, { botId })
       await bot.telegram.deleteWebhook()
       bot.startPolling()
     }
